@@ -1,7 +1,7 @@
 #-----------BEGIN MAKEFILE---------------------------
 FUNWAVE_DIR = .
 WORK_DIR    = funwave-work
-COMPILER    = intel
+COMPILER    = gnu
 PARALLEL    = true
 EXEC        = funwave
 PRECISION   = single
