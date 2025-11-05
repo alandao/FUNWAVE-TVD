@@ -6,8 +6,36 @@ MODULE DEBUG_OUTPUT
     USE PARAM
     USE GLOBAL, ONLY : RESULT_FOLDER
     IMPLICIT NONE
+    LOGICAL, SAVE :: DEBUG_DIRS_CREATED = .FALSE.
 
 CONTAINS
+
+SUBROUTINE CREATE_DEBUG_DIRECTORIES()
+    !---------------------------------------------
+    ! Create debug output directories if they don't exist
+    ! Called once at initialization
+    !---------------------------------------------
+    CHARACTER(LEN=300) :: cmd
+
+    IF (.NOT. DEBUG_DIRS_CREATED) THEN
+        ! Create debug directory and subdirectories
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/derivatives'
+        CALL SYSTEM(TRIM(cmd))
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/reconstruction'
+        CALL SYSTEM(TRIM(cmd))
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/wavespeeds'
+        CALL SYSTEM(TRIM(cmd))
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/fluxes'
+        CALL SYSTEM(TRIM(cmd))
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/sources'
+        CALL SYSTEM(TRIM(cmd))
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/rk3'
+        CALL SYSTEM(TRIM(cmd))
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/dispersion'
+        CALL SYSTEM(TRIM(cmd))
+        DEBUG_DIRS_CREATED = .TRUE.
+    ENDIF
+END SUBROUTINE CREATE_DEBUG_DIRECTORIES
 
 SUBROUTINE OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Array,varname,timestep,stage,subdir)
     !---------------------------------------------

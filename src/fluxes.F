@@ -203,6 +203,18 @@ END SUBROUTINE HLL
 !-------------------------------------------------------------------------------------
 SUBROUTINE DelxyFun
      USE GLOBAL
+# if defined (DEBUG_DERIVATIVES)
+     USE DEBUG_OUTPUT
+     LOGICAL, SAVE :: DERIVATIVES_OUTPUT_DONE = .FALSE.
+     LOGICAL, SAVE :: FIRST_CALL = .TRUE.
+# endif
+
+# if defined (DEBUG_DERIVATIVES)
+     IF(FIRST_CALL) THEN
+       WRITE(*,*) 'DelxyFun called for the first time!'
+       FIRST_CALL = .FALSE.
+     ENDIF
+# endif
 
 ! compute DelxFun
 # if defined(UseEtaScreen)
@@ -225,6 +237,29 @@ SUBROUTINE DelxyFun
       CALL DelyFun(DY,Mloc,Nloc,V,DelyV)
       CALL DelyFun(DY,Mloc,Nloc,HV,DelyHV)
       CALL DelyFun(DY,Mloc,Nloc,HU,DelyHU)
+
+# if defined (DEBUG_DERIVATIVES)
+! Output derivative arrays for validation (only once at first call)
+#  if defined (PARALLEL)
+      IF(.NOT. DERIVATIVES_OUTPUT_DONE .AND. myid==0) THEN
+#  else
+      IF(.NOT. DERIVATIVES_OUTPUT_DONE) THEN
+#  endif
+        CALL CREATE_DEBUG_DIRECTORIES()
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxEtar,'delx_etar',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxU,'delx_u',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxV,'delx_v',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHU,'delx_hu',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHV,'delx_hv',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyEtar,'dely_etar',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyU,'dely_u',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyV,'dely_v',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHU,'dely_hu',1,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHV,'dely_hv',1,0,'derivatives')
+        DERIVATIVES_OUTPUT_DONE = .TRUE.
+        WRITE(*,*) 'Phase 1: Debug output written for derivatives at first timestep'
+      ENDIF
+# endif
 
 END SUBROUTINE DelxyFun
 
