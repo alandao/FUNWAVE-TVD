@@ -11,3 +11,4 @@ test_regular_wave_1d/time_dt.out
 test_regular_wave_1d/LOG.txt
 test_regular_wave_1d/Grid_Range.out
 funwave-work
+test_regular_wave_1d/input.txt

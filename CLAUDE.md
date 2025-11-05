@@ -40,7 +40,6 @@ Edit the main `Makefile` to configure:
 - `COMPILER`: intel, gnu, pgi, onyx
 - `PARALLEL`: true/false (MPI support)
 - `PRECISION`: single/double
-- `PX`, `PY`: Processor numbers for MPI (must match mpirun -np)
 
 Optional flags (uncomment as needed):
 - `-DVESSEL`: Ship wake modeling
@@ -49,17 +48,27 @@ Optional flags (uncomment as needed):
 - `-DMETEO`: Meteorological forcing
 - `-DWIND`: Wind forcing
 
+**Note**: Processor numbers (`PX`, `PY`) are set in the `input.txt` file, not the Makefile. Ensure `mpirun -np` matches `PX * PY`.
+
 ### Running Simulations
 
 ```bash
-# Serial execution
-./funwave-work/funwave
+# Find the executable name (varies based on compiler and configuration)
+ls funwave-work/
+
+# Serial execution (example for single precision parallel build)
+./funwave-work/funwave--mpif90-parallel-single
 
 # Parallel execution (adjust -np to match PX*PY in input file)
-mpirun -np 4 ./funwave-work/funwave
+mpirun -np 4 ./funwave-work/funwave--mpif90-parallel-single
 ```
 
 The model reads configuration from `input.txt` in the working directory.
+
+**Note**: The executable name follows the pattern `funwave--[compiler]-[mode]-[precision]`, where:
+- compiler: mpif90, ifort, etc.
+- mode: parallel or serial
+- precision: single or double
 
 ## Code Architecture
 
@@ -140,37 +149,17 @@ mkdir -p test_regular_wave_1d/output
 cd test_regular_wave_1d
 ```
 
-3. **Create input.txt with key parameters:**
-```
-TITLE = regular_1D
-PX = 2                  # Processors in X
-PY = 1                  # Processors in Y
-DEPTH_TYPE = SLOPE      # Idealized slope bathymetry
-DEPTH_FLAT = 10.0       # Initial depth (m)
-SLP = 0.05              # Slope gradient
-Xslp = 800.0            # Slope starting position (m)
-Mglob = 1024            # Grid points in X
-Nglob = 3               # Grid points in Y (minimal for 1D)
-DX = 1.0                # Grid spacing X (m)
-DY = 1.0                # Grid spacing Y (m)
-TOTAL_TIME = 200.0      # Simulation time (s)
-PLOT_INTV = 10.0        # Output interval (s)
+3. **Create input.txt (copy from simple_cases):**
 
-# Wavemaker configuration
-WAVEMAKER = WK_REG      # Regular wave generation
-DEP_WK = 10.0          # Depth at wavemaker (m)
-Xc_WK = 250.0          # Wavemaker X position (m)
-Tperiod = 12.0         # Wave period (s)
-AMP_WK = 0.5           # Wave amplitude (m)
-Delta_WK = 3.0         # Width parameter (3.0 for nonlinear waves)
-
-# Sponge layers
-Sponge_west_width = 180.0  # Absorbing boundary
+Copy pre-configured file:
+```bash
+cp ../simple_cases/surface_wave_1d/input_files/input_reg.txt input.txt
 ```
 
 4. **Run the simulation:**
 ```bash
-mpirun -np 2 ../funwave-work/funwave--mpif90-parallel-single
+# Note: -np must match PX * PY from input.txt
+mpirun -np 4 ../funwave-work/funwave--mpif90-parallel-single
 ```
 
 #### Expected Output
@@ -184,10 +173,11 @@ The simulation generates files in the output directory:
 #### Verification
 
 A successful run will:
-- Complete in ~40 seconds for 200s simulation time
-- Show wave shoaling with increasing velocity up the slope
-- Generate 20 timestep outputs
+- Complete in ~22 seconds for 200s simulation time (with 4 processors)
+- Show wave shoaling with increasing velocity up the slope (from ~0.5 m/s to ~1.7 m/s)
+- Generate 20 timestep outputs (every 10 seconds)
 - Display "Normal Termination!" message
+- Maximum surface elevation reaches ~1.14m due to wave shoaling
 
 ### Benchmark Cases
 
