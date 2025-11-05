@@ -1,11 +1,15 @@
-# Compiled source #
-###################
-*.o
-*.f90
-*.mod
-mytvd
-*~
-*.*~
-funwave-work
+# Python virtual environment
+venv/
+
+# Build artifacts
+funwave-work/
+
+# Test outputs and backups
 test_regular_wave_1d_flat
 test_regular_wave_1d
+
+
+# Makefile backups
+Makefile.bak
+
+*.mod

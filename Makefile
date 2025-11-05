@@ -21,7 +21,7 @@ PRECISION   = single
 #  FLAG_11 = -DDEEP_DRAFT_VESSEL
 #----------------uncommon options---------------------
 DEF_FC      = mpif90
-DEF_FC_FLAG = 
+DEF_FC_FLAG =
 SPHERICAL   = false
 MPI         = openmpi
 DEBUG       = false
@@ -31,15 +31,95 @@ CLIB        =
 MDEPFLAGS   = --cpp --fext=f90 --file=-
 RANLIB      = ranlib
 
+#----------debug instrumentation options--------------
+# Enable specific debug outputs for validation
+# Set to true to instrument that computational level
+DEBUG_DERIVATIVES    = true
+DEBUG_RECONSTRUCTION = false
+DEBUG_WAVESPEEDS     = false
+DEBUG_FLUXES         = false
+DEBUG_INTERFACE      = false
+DEBUG_RK_STAGES      = false
+DEBUG_SOURCES        = false
+DEBUG_DISPERSION     = false
+DEBUG_ALL            = false
+
+# Convert debug options to compiler flags (FLAG_12+ to avoid conflicts)
+FLAG_12 =
+FLAG_13 =
+FLAG_14 =
+FLAG_15 =
+FLAG_16 =
+FLAG_17 =
+FLAG_18 =
+FLAG_19 =
+FLAG_20 =
+
+ifeq ($(DEBUG_ALL),true)
+  FLAG_12 = -DDEBUG_ALL
+else
+  ifeq ($(DEBUG_DERIVATIVES),true)
+    FLAG_12 = -DDEBUG_DERIVATIVES
+  endif
+  ifeq ($(DEBUG_RECONSTRUCTION),true)
+    FLAG_13 = -DDEBUG_RECONSTRUCTION
+  endif
+  ifeq ($(DEBUG_WAVESPEEDS),true)
+    FLAG_14 = -DDEBUG_WAVESPEEDS
+  endif
+  ifeq ($(DEBUG_FLUXES),true)
+    FLAG_15 = -DDEBUG_FLUXES
+  endif
+  ifeq ($(DEBUG_INTERFACE),true)
+    FLAG_16 = -DDEBUG_INTERFACE
+  endif
+  ifeq ($(DEBUG_RK_STAGES),true)
+    FLAG_17 = -DDEBUG_RK_STAGES
+  endif
+  ifeq ($(DEBUG_SOURCES),true)
+    FLAG_18 = -DDEBUG_SOURCES
+  endif
+  ifeq ($(DEBUG_DISPERSION),true)
+    FLAG_19 = -DDEBUG_DISPERSION
+  endif
+endif
+
 #----------include the essential makefiles------------
 include $(FUNWAVE_DIR)/GNUMake/Essential/Make_Essential
+
+#----------custom build targets-----------------------
+.PHONY: release debug
+
+release:
+	@echo "Building RELEASE version (no debug instrumentation)..."
+	@sed -i.bak 's/^DEBUG_DERIVATIVES[[:space:]]*=.*/DEBUG_DERIVATIVES    = false/' Makefile
+	@sed -i.bak 's/^DEBUG_RECONSTRUCTION[[:space:]]*=.*/DEBUG_RECONSTRUCTION = false/' Makefile
+	@sed -i.bak 's/^DEBUG_WAVESPEEDS[[:space:]]*=.*/DEBUG_WAVESPEEDS     = false/' Makefile
+	@sed -i.bak 's/^DEBUG_FLUXES[[:space:]]*=.*/DEBUG_FLUXES         = false/' Makefile
+	@sed -i.bak 's/^DEBUG_INTERFACE[[:space:]]*=.*/DEBUG_INTERFACE      = false/' Makefile
+	@sed -i.bak 's/^DEBUG_RK_STAGES[[:space:]]*=.*/DEBUG_RK_STAGES      = false/' Makefile
+	@sed -i.bak 's/^DEBUG_SOURCES[[:space:]]*=.*/DEBUG_SOURCES        = false/' Makefile
+	@sed -i.bak 's/^DEBUG_DISPERSION[[:space:]]*=.*/DEBUG_DISPERSION     = false/' Makefile
+	@sed -i.bak 's/^DEBUG_ALL[[:space:]]*=.*/DEBUG_ALL            = false/' Makefile
+	@rm -f Makefile.bak
+	$(MAKE) clean
+	$(MAKE)
+	@echo "✓ Release executable built: $(WORK_DIR)/funwave--mpif90-parallel-single"
+
+debug:
+	@echo "Building DEBUG version (with derivative instrumentation)..."
+	@sed -i.bak 's/^DEBUG_DERIVATIVES[[:space:]]*=.*/DEBUG_DERIVATIVES    = true/' Makefile
+	@rm -f Makefile.bak
+	$(MAKE) clean
+	$(MAKE)
+	@echo "✓ Debug executable built: $(WORK_DIR)/funwave-DEBUG_DERIVATIVES--mpif90-parallel-single"
 
 ##-----------------------------------------------------
 ##      Instructions for Makefile
 ##-----------------------------------------------------
  
 ##--------Make options (provided by Make_Essential)----
-# make:  
+# make:
 #      Create the $(WORK_DIR) directory and the exectutable
 # make clean:
 #      Clean the "build" directory in "$(WORK_DIR)" directory
@@ -47,11 +127,17 @@ include $(FUNWAVE_DIR)/GNUMake/Essential/Make_Essential
 #      Clean the "build" directory in "$(WORK_DIR)" directory and the executable
 # make clobber:
 #      Clean up the whole $(WORK_DIR) directory
-# make chec-env:
+# make check-env:
 #      Print the compier version and mpi version
 # make print-foo
 #      Check the value of "foo" in Makefile (Or Makefile_Essential)
 #      For example, "make print $(EXEC)" and you will see the final $(EXEC) name
+#
+##--------Custom build targets (for validation)--------
+# make release:
+#      Build RELEASE version (no debug instrumentation, production mode)
+# make debug:
+#      Build DEBUG version (with DEBUG_DERIVATIVES=true for validation)
 
 ##---------Notes to the Makefils variables------------
 # FUNWAVE_DIR: 

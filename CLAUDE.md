@@ -21,18 +21,43 @@ make
 # Clean build directory
 make clean
 
-# Clean build and executable
-make clean-exe
-
-# Remove entire work directory
-make clobber
-
 # Check compiler and MPI versions
 make check-env
-
-# Check Makefile variable values
-make print-VARIABLE_NAME
 ```
+
+### Validation Build Targets (SurfWave-JAX Development)
+
+For SurfWave-JAX development, use these targets to build and validate debug instrumentation:
+
+**Setup (one-time)**:
+```bash
+# Create Python venv in FUNWAVE-TVD directory
+python3 -m venv venv
+venv/bin/pip install numpy
+```
+
+**Build commands**:
+```bash
+# Build RELEASE version (no debug instrumentation)
+make release
+
+# Build DEBUG version (with DEBUG_DERIVATIVES=true)
+make debug
+```
+
+**Validation test**:
+```bash
+# Run instrumentation validation test
+venv/bin/python test_regular_vs_debug.py
+```
+
+**What the test does:**
+- Runs both regular and debug executables on the same test case
+- Compares ALL simulation output files
+- Verifies max difference < 1e-14 (essentially machine precision)
+- Confirms debug instrumentation is completely non-invasive
+
+**Critical requirement:** Debug instrumentation must NOT affect simulation results.
 
 ### Build Configuration
 
@@ -211,21 +236,6 @@ The code uses MPI domain decomposition:
 - Each processor writes its own output files
 
 ## Common Development Tasks
-
-### Adding New Source Terms
-
-1. Add variables to `mod_global.F`
-2. Implement physics in new subroutine
-3. Call from main time loop in `main.F`
-4. Add preprocessor flag if optional feature
-
-### Modifying Wave Makers
-
-Wave generation logic is in `src/wavemaker.F`. Supported types:
-- Solitary waves (INI_SOL, LEF_SOL)
-- Regular waves (WK_REG)
-- Irregular waves (WK_IRR, WK_TIME_SERIES)
-- Custom time series input
 
 ### Debugging
 

@@ -134,12 +134,15 @@ Program FUNWAVE_TVD
 !
 !-------------------------------------------------------------------------------------
      USE GLOBAL
-     
+
 # if defined (VESSEL)
      USE VESSEL_MODULE
 # endif
 # if defined (SEDIMENT)
      USE SEDIMENT_MODULE
+# endif
+# if defined (DEBUG_DERIVATIVES) || defined (DEBUG_ALL)
+     USE DEBUG_OUTPUT
 # endif
 
 # if defined (FOAM)
@@ -294,9 +297,22 @@ Program FUNWAVE_TVD
 ! update three variables
      Eta0=Eta
      Ubar0=Ubar
-     Vbar0=Vbar  
+     Vbar0=Vbar
 # if defined (SEDIMENT)
      CHH0=CHH
+# endif
+
+# if defined (DEBUG_DERIVATIVES) || defined (DEBUG_ALL)
+!   Test Phase 0 instrumentation - output Eta at first timestep only
+#    if defined (PARALLEL)
+     IF(myid==0 .AND. icount==1) THEN
+#    else
+     IF(icount==1) THEN
+#    endif
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta, &
+                                  'test_eta',icount,0,'derivatives')
+       WRITE(*,*) 'Phase 0 Test: Debug output written for Eta at timestep 1'
+     ENDIF
 # endif
 
 ! previous update_mask
