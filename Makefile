@@ -107,12 +107,16 @@ release:
 	@echo "✓ Release executable built: $(WORK_DIR)/funwave--mpif90-parallel-single"
 
 debug:
-	@echo "Building DEBUG version (with derivative instrumentation)..."
+	@echo "Building DEBUG version (with all current instrumentation)..."
+	@sed -i.bak 's/^EXEC[[:space:]]*=.*/EXEC        = funwave-DEBUG/' Makefile
 	@sed -i.bak 's/^DEBUG_DERIVATIVES[[:space:]]*=.*/DEBUG_DERIVATIVES    = true/' Makefile
+	@sed -i.bak 's/^DEBUG_RECONSTRUCTION[[:space:]]*=.*/DEBUG_RECONSTRUCTION = true/' Makefile
 	@rm -f Makefile.bak
 	$(MAKE) clean
 	$(MAKE)
-	@echo "✓ Debug executable built: $(WORK_DIR)/funwave-DEBUG_DERIVATIVES--mpif90-parallel-single"
+	@sed -i.bak 's/^EXEC[[:space:]]*=.*/EXEC        = funwave/' Makefile
+	@rm -f Makefile.bak
+	@echo "✓ Debug executable built: $(WORK_DIR)/funwave-DEBUG"
 
 ##-----------------------------------------------------
 ##      Instructions for Makefile
@@ -136,8 +140,10 @@ debug:
 ##--------Custom build targets (for validation)--------
 # make release:
 #      Build RELEASE version (no debug instrumentation, production mode)
+#      Creates: funwave--mpif90-parallel-single
 # make debug:
-#      Build DEBUG version (with DEBUG_DERIVATIVES=true for validation)
+#      Build DEBUG version (enables all current instrumentation for validation)
+#      Creates: funwave-DEBUG (constant name, easy to maintain)
 
 ##---------Notes to the Makefils variables------------
 # FUNWAVE_DIR: 

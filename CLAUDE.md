@@ -40,10 +40,14 @@ venv/bin/pip install numpy
 ```bash
 # Build RELEASE version (no debug instrumentation)
 make release
+# Creates: funwave-work/funwave--mpif90-parallel-single
 
-# Build DEBUG version (with DEBUG_DERIVATIVES=true)
+# Build DEBUG version (with all current instrumentation)
 make debug
+# Creates: funwave-work/funwave-DEBUG (constant name)
 ```
+
+**Important**: The debug executable always has the **constant name** `funwave-DEBUG` regardless of which debug flags are enabled. This means you never need to update test scripts when adding new instrumentation phases.
 
 **Validation test**:
 ```bash
@@ -52,10 +56,19 @@ venv/bin/python test_regular_vs_debug.py
 ```
 
 **What the test does:**
-- Runs both regular and debug executables on the same test case
-- Compares ALL simulation output files
+- Runs both regular and debug executables on the same test case (`test_regular_wave_1d_flat/`)
+- Compares ALL simulation output files (eta, mask, etc.)
 - Verifies max difference < 1e-14 (essentially machine precision)
 - Confirms debug instrumentation is completely non-invasive
+- Checks that debug files are created in `output/debug/` subdirectories
+
+**Current instrumentation status (Phases 1-2)**:
+- **Phase 1 (Level 0)**: Van Leer limited slopes - 10 files in `debug/derivatives/`
+- **Phase 2 (Levels 1-2)**: MUSCL reconstruction - 24 files in `debug/reconstruction/`
+- **State snapshots**: 5 files in `debug/state/` (depth, eta, mask, u, v)
+- **Total**: 39 debug files at timestep 50 (TIME ~= 0.5s)
+
+**Validation results**: All simulation outputs identical (max difference = 0.00e+00)
 
 **Critical requirement:** Debug instrumentation must NOT affect simulation results.
 
@@ -81,19 +94,21 @@ Optional flags (uncomment as needed):
 # Find the executable name (varies based on compiler and configuration)
 ls funwave-work/
 
-# Serial execution (example for single precision parallel build)
-./funwave-work/funwave--mpif90-parallel-single
-
-# Parallel execution (adjust -np to match PX*PY in input file)
+# Run RELEASE version (parallel execution, adjust -np to match PX*PY in input file)
 mpirun -np 4 ./funwave-work/funwave--mpif90-parallel-single
+
+# Run DEBUG version (for SurfWave-JAX validation)
+mpirun -np 4 ./funwave-work/funwave-DEBUG
 ```
 
 The model reads configuration from `input.txt` in the working directory.
 
-**Note**: The executable name follows the pattern `funwave--[compiler]-[mode]-[precision]`, where:
-- compiler: mpif90, ifort, etc.
-- mode: parallel or serial
-- precision: single or double
+**Executable naming**:
+- **Release**: `funwave--[compiler]-[mode]-[precision]` (e.g., `funwave--mpif90-parallel-single`)
+  - compiler: mpif90, ifort, etc.
+  - mode: parallel or serial
+  - precision: single or double
+- **Debug**: `funwave-DEBUG` (constant name, always the same regardless of instrumentation flags)
 
 ## Code Architecture
 
@@ -239,9 +254,20 @@ The code uses MPI domain decomposition:
 
 ### Debugging
 
-Enable debug mode in Makefile:
+**Compiler debug mode** (for gdb/lldb debugging):
 ```bash
-DEBUG = true  # Adds debug flags, disables optimization
+# Edit Makefile
+DEBUG = true  # Adds debug flags (-g, -Wall), disables optimization
 ```
+
+**Validation instrumentation** (for SurfWave-JAX development):
+```bash
+# Use custom build targets (see "Validation Build Targets" section above)
+make debug    # Creates funwave-DEBUG with instrumentation output
+```
+
+**Note**: These are different debug modes:
+- `DEBUG=true` in Makefile: Compiler debug flags for traditional debugging
+- `make debug` target: Validation instrumentation for bottom-up testing (outputs arrays to files)
 
 Use station output for time series at specific points.

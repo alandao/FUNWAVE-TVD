@@ -67,7 +67,7 @@ def main():
     debug_backup_dir = test_dir / "output_debug_backup"
 
     regular_exe = funwave_dir / "funwave-work" / "funwave--mpif90-parallel-single"
-    debug_exe = funwave_dir / "funwave-work" / "funwave-DEBUG_DERIVATIVES-DEBUG_RECONSTRUCTION--mpif90-parallel-single"
+    debug_exe = funwave_dir / "funwave-work" / "funwave-DEBUG"
 
     # Check executables exist
     if not regular_exe.exists():
