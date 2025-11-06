@@ -503,7 +503,13 @@ END SUBROUTINE WAVE_SPEED
 !-------------------------------------------------------------------------------------
 SUBROUTINE CONSTRUCTION
      USE GLOBAL
+# if defined (DEBUG_RECONSTRUCTION) || defined (DEBUG_ALL)
+     USE DEBUG_OUTPUT
+# endif
      IMPLICIT NONE
+# if defined (DEBUG_RECONSTRUCTION) || defined (DEBUG_ALL)
+     LOGICAL, SAVE :: RECONSTRUCTION_OUTPUT_DONE = .FALSE.
+# endif
 # if defined (CARTESIAN)
 ! ykchoi (15. 08. 06.)
      REAL(SP),DIMENSION(Mloc,Nloc) :: DelxU4, DelxV4
@@ -735,9 +741,45 @@ SUBROUTINE CONSTRUCTION
         +0.5*GRAV*((EtaRyR)*(EtaRyR)*Gamma3+2.0_SP*(EtaRyR)*(Depthy))
 # endif
 # endif
-	
+
+# if defined (DEBUG_RECONSTRUCTION) || defined (DEBUG_ALL)
+    ! Output reconstruction at TIME ~= 0.5s (timestep 50) when waves exist
+    IF(.NOT. RECONSTRUCTION_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+        ! Output x-interface reconstructions
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UxL,'uxl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UxR,'uxr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VxL,'vxl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VxR,'vxr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRxL,'etarxl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRxR,'etarxr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HxL,'hxl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HxR,'hxr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUxL,'huxl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUxR,'huxr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVxL,'hvxl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVxR,'hvxr',50,0,'reconstruction')
+
+        ! Output y-interface reconstructions
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UyL,'uyl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UyR,'uyr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VyL,'vyl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VyR,'vyr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRyL,'etaryl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRyR,'etaryr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HyL,'hyl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HyR,'hyr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUyL,'huyl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUyR,'huyr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVyL,'hvyl',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVyR,'hvyr',50,0,'reconstruction')
+
+        RECONSTRUCTION_OUTPUT_DONE = .TRUE.
+        IF(myid==0) WRITE(*,'(A,F8.3,A)') 'Phase 2: Reconstruction debug output at TIME=', TIME, 's'
+    ENDIF
+# endif
+
 	deallocate( MASK9u, MASK9v )
-     
+
 END SUBROUTINE CONSTRUCTION
 
 !-------------------------------------------------------------------------------------

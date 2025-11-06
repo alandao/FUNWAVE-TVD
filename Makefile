@@ -35,7 +35,7 @@ RANLIB      = ranlib
 # Enable specific debug outputs for validation
 # Set to true to instrument that computational level
 DEBUG_DERIVATIVES    = true
-DEBUG_RECONSTRUCTION = false
+DEBUG_RECONSTRUCTION = true
 DEBUG_WAVESPEEDS     = false
 DEBUG_FLUXES         = false
 DEBUG_INTERFACE      = false

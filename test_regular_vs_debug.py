@@ -2,8 +2,9 @@
 """
 Critical Phase 0 Test: Verify debug instrumentation does NOT affect simulation results.
 
-This test ensures that FUNWAVE with DEBUG_DERIVATIVES=true produces
-EXACTLY the same simulation outputs as regular FUNWAVE (excluding debug files).
+This test ensures that FUNWAVE with debug instrumentation (DEBUG_DERIVATIVES,
+DEBUG_RECONSTRUCTION, etc.) produces EXACTLY the same simulation outputs as
+regular FUNWAVE (excluding debug files).
 
 This is a HARD REQUIREMENT and must pass for all phases.
 
@@ -66,7 +67,7 @@ def main():
     debug_backup_dir = test_dir / "output_debug_backup"
 
     regular_exe = funwave_dir / "funwave-work" / "funwave--mpif90-parallel-single"
-    debug_exe = funwave_dir / "funwave-work" / "funwave-DEBUG_DERIVATIVES--mpif90-parallel-single"
+    debug_exe = funwave_dir / "funwave-work" / "funwave-DEBUG_DERIVATIVES-DEBUG_RECONSTRUCTION--mpif90-parallel-single"
 
     # Check executables exist
     if not regular_exe.exists():
@@ -76,7 +77,7 @@ def main():
 
     if not debug_exe.exists():
         print(f"❌ Debug executable not found: {debug_exe}")
-        print("   Run: make clean && make (with DEBUG_DERIVATIVES=true)")
+        print("   Run: make clean && make debug")
         return False
 
     print(f"✓ Regular executable: {regular_exe.name}")
@@ -123,7 +124,7 @@ def main():
     shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
     (output_dir / "debug").mkdir(parents=True)
-    for subdir in ["derivatives", "reconstruction", "wavespeeds", "fluxes",
+    for subdir in ["state", "derivatives", "reconstruction", "wavespeeds", "fluxes",
                    "interface", "rk_stages", "sources", "dispersion"]:
         (output_dir / "debug" / subdir).mkdir(parents=True)
 
@@ -144,7 +145,10 @@ def main():
     print("✓ Debug mode completed successfully")
 
     # Check debug output was created
-    debug_files = list((output_dir / "debug" / "derivatives").glob("*.txt"))
+    debug_files = []
+    for subdir in ["state", "derivatives", "reconstruction"]:
+        debug_files.extend(list((output_dir / "debug" / subdir).glob("*.txt")))
+
     if not debug_files:
         print("❌ No debug files created!")
         return False
