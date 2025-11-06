@@ -62,11 +62,12 @@ venv/bin/python test_regular_vs_debug.py
 - Confirms debug instrumentation is completely non-invasive
 - Checks that debug files are created in `output/debug/` subdirectories
 
-**Current instrumentation status (Phases 1-2)**:
+**Current instrumentation status (Phases 1-3)**:
 - **Phase 1 (Level 0)**: Van Leer limited slopes - 10 files in `debug/derivatives/`
 - **Phase 2 (Levels 1-2)**: MUSCL reconstruction - 24 files in `debug/reconstruction/`
+- **Phase 3 (Level 3)**: Wave speeds - 4 files in `debug/wavespeeds/`
 - **State snapshots**: 5 files in `debug/state/` (depth, eta, mask, u, v)
-- **Total**: 39 debug files at timestep 50 (TIME ~= 0.5s)
+- **Total**: 43 debug files at timestep 50 (TIME ~= 0.5s)
 
 **Validation results**: All simulation outputs identical (max difference = 0.00e+00)
 

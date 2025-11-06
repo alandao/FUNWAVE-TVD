@@ -36,7 +36,7 @@ RANLIB      = ranlib
 # Set to true to instrument that computational level
 DEBUG_DERIVATIVES    = true
 DEBUG_RECONSTRUCTION = true
-DEBUG_WAVESPEEDS     = false
+DEBUG_WAVESPEEDS     = true
 DEBUG_FLUXES         = false
 DEBUG_INTERFACE      = false
 DEBUG_RK_STAGES      = false
@@ -111,6 +111,7 @@ debug:
 	@sed -i.bak 's/^EXEC[[:space:]]*=.*/EXEC        = funwave-DEBUG/' Makefile
 	@sed -i.bak 's/^DEBUG_DERIVATIVES[[:space:]]*=.*/DEBUG_DERIVATIVES    = true/' Makefile
 	@sed -i.bak 's/^DEBUG_RECONSTRUCTION[[:space:]]*=.*/DEBUG_RECONSTRUCTION = true/' Makefile
+	@sed -i.bak 's/^DEBUG_WAVESPEEDS[[:space:]]*=.*/DEBUG_WAVESPEEDS     = true/' Makefile
 	@rm -f Makefile.bak
 	$(MAKE) clean
 	$(MAKE)

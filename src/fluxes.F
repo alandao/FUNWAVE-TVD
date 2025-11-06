@@ -51,7 +51,13 @@
 !-------------------------------------------------------------------------------------
 SUBROUTINE FLUXES
      USE GLOBAL
+# if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
+     USE DEBUG_OUTPUT
+# endif
      IMPLICIT NONE
+# if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
+     LOGICAL, SAVE :: WAVESPEEDS_OUTPUT_DONE = .FALSE.
+# endif
 
       IF(HIGH_ORDER(1:3)=='FOU') THEN       !ykchoi (08/28/2016)
 
@@ -98,13 +104,29 @@ SUBROUTINE FLUXES
 !-------------------------------------------------------------
 !-------------------------------------------------------------
 
-      ELSE                                     
+      ELSE
        CALL DelxyFun
-       CALL CONSTRUCTION 
+       CALL CONSTRUCTION
        CALL WAVE_SPEED(Mloc,Nloc,Mloc1,Nloc1,UxL,UxR,VyL,VyR,HxL,HxR,HyL,HyR, &
             SxL,SxR,SyL,SyR)
 
      ENDIF
+
+# if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
+    ! Output wave speeds at TIME ~= 0.5s (timestep 50) when waves exist
+    IF(.NOT. WAVESPEEDS_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+        ! Output x-interface wave speeds (M1 x N)
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SxL,'sxl',50,0,'wavespeeds')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SxR,'sxr',50,0,'wavespeeds')
+
+        ! Output y-interface wave speeds (M x N1)
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SyL,'syl',50,0,'wavespeeds')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SyR,'syr',50,0,'wavespeeds')
+
+        WAVESPEEDS_OUTPUT_DONE = .TRUE.
+        IF(myid==0) WRITE(*,'(A,F8.3,A)') 'Phase 3: Wave speeds debug output at TIME=', TIME, 's'
+    ENDIF
+# endif
 
      IF(CONSTR(1:3)=='HLL')THEN
        CALL FLUX_AT_INTERFACE_HLL
