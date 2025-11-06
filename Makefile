@@ -37,7 +37,7 @@ RANLIB      = ranlib
 DEBUG_DERIVATIVES    = true
 DEBUG_RECONSTRUCTION = true
 DEBUG_WAVESPEEDS     = true
-DEBUG_FLUXES         = false
+DEBUG_FLUXES         = true
 DEBUG_INTERFACE      = false
 DEBUG_RK_STAGES      = false
 DEBUG_SOURCES        = false
@@ -112,6 +112,7 @@ debug:
 	@sed -i.bak 's/^DEBUG_DERIVATIVES[[:space:]]*=.*/DEBUG_DERIVATIVES    = true/' Makefile
 	@sed -i.bak 's/^DEBUG_RECONSTRUCTION[[:space:]]*=.*/DEBUG_RECONSTRUCTION = true/' Makefile
 	@sed -i.bak 's/^DEBUG_WAVESPEEDS[[:space:]]*=.*/DEBUG_WAVESPEEDS     = true/' Makefile
+	@sed -i.bak 's/^DEBUG_FLUXES[[:space:]]*=.*/DEBUG_FLUXES         = true/' Makefile
 	@rm -f Makefile.bak
 	$(MAKE) clean
 	$(MAKE)

@@ -51,12 +51,15 @@
 !-------------------------------------------------------------------------------------
 SUBROUTINE FLUXES
      USE GLOBAL
-# if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
+# if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
      USE DEBUG_OUTPUT
 # endif
      IMPLICIT NONE
 # if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
      LOGICAL, SAVE :: WAVESPEEDS_OUTPUT_DONE = .FALSE.
+# endif
+# if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
+     LOGICAL, SAVE :: FLUXES_OUTPUT_DONE = .FALSE.
 # endif
 
       IF(HIGH_ORDER(1:3)=='FOU') THEN       !ykchoi (08/28/2016)
@@ -133,6 +136,24 @@ SUBROUTINE FLUXES
      ELSE
        CALL FLUX_AT_INTERFACE
      ENDIF
+
+# if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
+    ! Output fluxes at TIME ~= 0.5s (timestep 50) when waves exist
+    IF(.NOT. FLUXES_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+        ! Output x-interface fluxes
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,P,'p',50,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Fx,'fx',50,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Gx,'gx',50,0,'fluxes')
+
+        ! Output y-interface fluxes
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Q,'q',50,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Fy,'fy',50,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Gy,'gy',50,0,'fluxes')
+
+        FLUXES_OUTPUT_DONE = .TRUE.
+        IF(myid==0) WRITE(*,'(A,F8.3,A)') 'Phase 4: Fluxes debug output at TIME=', TIME, 's'
+    ENDIF
+# endif
 
      CALL BOUNDARY_CONDITION
 

@@ -61,7 +61,13 @@
 !-------------------------------------------------------------------------------------
 SUBROUTINE CAL_DISPERSION
      USE GLOBAL
+# if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
+     USE DEBUG_OUTPUT
+# endif
      IMPLICIT NONE
+# if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
+     LOGICAL, SAVE :: DISPERSION_OUTPUT_DONE = .FALSE.
+# endif
 
      REAL(SP),Dimension(Mloc,Nloc) :: DU,DV,DUt,DVt
      REAL(SP) :: UxxVxy,UxyVyy,HUxxHVxy,HUxyHVyy, &
@@ -382,6 +388,20 @@ SUBROUTINE CAL_DISPERSION
 
      ENDDO
      ENDDO
+
+# if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
+    IF(.NOT. DISPERSION_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+#  if defined (PARALLEL)
+        IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
+#  else
+        CALL CREATE_DEBUG_DIRECTORIES()
+#  endif
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U4,'u4',50,0,'dispersion')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V4,'v4',50,0,'dispersion')
+        DISPERSION_OUTPUT_DONE = .TRUE.
+        IF(myid.eq.0) WRITE(*,*) 'Dispersion debug output at TIME=', TIME
+    ENDIF
+# endif
 
 # if defined(AB_OUTPUT)
        DO J=Jbeg,Jend
