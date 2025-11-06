@@ -239,25 +239,42 @@ SUBROUTINE DelxyFun
       CALL DelyFun(DY,Mloc,Nloc,HU,DelyHU)
 
 # if defined (DEBUG_DERIVATIVES)
-! Output derivative arrays for validation (only once at first call)
+! Output derivative arrays for validation when waves are first detected
+! All processors must participate in the output since OUTPUT_DEBUG_ARRAY_2D
+! now handles the parallel gathering internally
+      ! Output when TIME reaches approximately 0.5 seconds (when waves have formed)
+      IF(.NOT. DERIVATIVES_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
 #  if defined (PARALLEL)
-      IF(.NOT. DERIVATIVES_OUTPUT_DONE .AND. myid==0) THEN
+        IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
 #  else
-      IF(.NOT. DERIVATIVES_OUTPUT_DONE) THEN
-#  endif
         CALL CREATE_DEBUG_DIRECTORIES()
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxEtar,'delx_etar',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxU,'delx_u',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxV,'delx_v',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHU,'delx_hu',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHV,'delx_hv',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyEtar,'dely_etar',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyU,'dely_u',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyV,'dely_v',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHU,'dely_hu',1,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHV,'dely_hv',1,0,'derivatives')
+#  endif
+        WRITE(*,*) 'Phase 1 debug output at TIME:', TIME
+
+        ! First output the INPUT STATE that produces these slopes
+        ! This allows JAX to load the exact same state and compute slopes
+        ! Use 50 to indicate TIME ~= 0.5s (multiplied by 100 for integer timestep)
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_input',50,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U,'u_input',50,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V,'v_input',50,0,'state')
+        ! MASK is integer, convert to real for output
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,REAL(MASK,SP),'mask_input',50,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Depth,'depth_input',50,0,'state')
+
+        ! Then output the COMPUTED SLOPES from that state
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxEtar,'delx_etar',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxU,'delx_u',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxV,'delx_v',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHU,'delx_hu',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHV,'delx_hv',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyEtar,'dely_etar',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyU,'dely_u',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyV,'dely_v',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHU,'dely_hu',50,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHV,'dely_hv',50,0,'derivatives')
         DERIVATIVES_OUTPUT_DONE = .TRUE.
-        WRITE(*,*) 'Phase 1: Debug output written for derivatives at first timestep'
+        IF(myid==0) WRITE(*,'(A,F8.3,A,E12.4)') 'Phase 1: Debug output at TIME=', &
+                     TIME, ' with max|eta|=', MAXVAL(ABS(Eta))
       ENDIF
 # endif
 
