@@ -52,6 +52,7 @@
 !-------------------------------------------------------------------------------------
 SUBROUTINE ESTIMATE_HUV(ISTEP)
      USE GLOBAL
+     USE DEBUG_OUTPUT
 # if defined (VESSEL)
      USE VESSEL_MODULE
 # endif
@@ -67,6 +68,8 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
 
      IMPLICIT NONE
      INTEGER,INTENT(IN)::ISTEP
+     INTEGER::TIMESTEP_NUM
+     LOGICAL::DEBUG_RK_STAGES
      REAL(SP),PARAMETER::n_left=-1.0_SP,n_right=1.0_SP,n_bottom=-1.0_SP,n_top=1.0_SP
      REAL(SP)::F_left,F_right,F_bottom,F_top,WK_Source
      REAL(SP),DIMENSION(Ibeg:Iend,Jbeg:Jend)::R1,R2,R3
@@ -76,6 +79,14 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
 !     REAL(SP)::DXg,DYg
 
      INTEGER::kf,kd
+
+! Debug output for initial state at specific timesteps
+     TIMESTEP_NUM = NINT(TIME/DT)
+     IF(TIMESTEP_NUM >= 5 .AND. TIMESTEP_NUM <= 7 .AND. ISTEP == 1) THEN
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_input',TIMESTEP_NUM,0,'state')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U,'u_input',TIMESTEP_NUM,0,'state')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V,'v_input',TIMESTEP_NUM,0,'state')
+     ENDIF
 
 ! MUSCL-Hancock, Zhou et al., p. 7
 
@@ -264,6 +275,21 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
      R1(I,J)=R1(I,J)+ PrecRateModel(I,J)
 # endif
 
+     ENDDO
+     ENDDO
+
+! Debug output for RK stages at steps 5-7
+     TIMESTEP_NUM = NINT(TIME/DT)
+     DEBUG_RK_STAGES = (TIMESTEP_NUM >= 5 .AND. TIMESTEP_NUM <= 7)
+     IF(DEBUG_RK_STAGES) THEN
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,R1,'R1',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_before_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,WaveMaker_Mass,'wavemaker_mass',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+     ENDIF
+
+     DO J=Jbeg,Jend
+     DO I=Ibeg,Iend
+
 # if defined (ITERATION)
       Eta(I,J)=ALPHA(ISTEP)*Eta0(I,J)+BETA(ISTEP)*(EtaOld(I,J)+DT*R1(I,J))
 # else
@@ -304,6 +330,18 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
      ENDIF
 # endif
 
+     ENDDO
+     ENDDO
+
+! Debug output for R2 and Ubar
+     IF(DEBUG_RK_STAGES) THEN
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,R2,'R2',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Ubar,'ubar_before_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+     ENDIF
+
+     DO J=Jbeg,Jend
+     DO I=Ibeg,Iend
+
 # if defined (ITERATION)
       Ubar(I,J)=ALPHA(ISTEP)*Ubar0(I,J)+BETA(ISTEP)*(UbarOld(I,J)+DT*R2(I,J))
 # else
@@ -337,6 +375,18 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
      ENDIF
 # endif
 
+     ENDDO
+     ENDDO
+
+! Debug output for R3 and Vbar
+     IF(DEBUG_RK_STAGES) THEN
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,R3,'R3',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Vbar,'vbar_before_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+     ENDIF
+
+     DO J=Jbeg,Jend
+     DO I=Ibeg,Iend
+
 # if defined (ITERATION)
       Vbar(I,J)=ALPHA(ISTEP)*Vbar0(I,J)+BETA(ISTEP)*(VbarOld(I,J)+DT*R3(I,J))
 # else
@@ -344,6 +394,13 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
 # endif
      ENDDO
      ENDDO
+
+! Debug output for final state after RK update
+     IF(DEBUG_RK_STAGES) THEN
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_after_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Ubar,'ubar_after_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+       CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Vbar,'vbar_after_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')
+     ENDIF
 
      CALL GET_Eta_U_V_HU_HV
 

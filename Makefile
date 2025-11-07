@@ -40,8 +40,8 @@ DEBUG_WAVESPEEDS     = true
 DEBUG_FLUXES         = true
 DEBUG_INTERFACE      = false
 DEBUG_RK_STAGES      = false
-DEBUG_SOURCES        = false
-DEBUG_DISPERSION     = false
+DEBUG_SOURCES        = true
+DEBUG_DISPERSION     = true
 DEBUG_ALL            = false
 
 # Convert debug options to compiler flags (FLAG_12+ to avoid conflicts)
@@ -113,6 +113,8 @@ debug:
 	@sed -i.bak 's/^DEBUG_RECONSTRUCTION[[:space:]]*=.*/DEBUG_RECONSTRUCTION = true/' Makefile
 	@sed -i.bak 's/^DEBUG_WAVESPEEDS[[:space:]]*=.*/DEBUG_WAVESPEEDS     = true/' Makefile
 	@sed -i.bak 's/^DEBUG_FLUXES[[:space:]]*=.*/DEBUG_FLUXES         = true/' Makefile
+	@sed -i.bak 's/^DEBUG_SOURCES[[:space:]]*=.*/DEBUG_SOURCES        = true/' Makefile
+	@sed -i.bak 's/^DEBUG_DISPERSION[[:space:]]*=.*/DEBUG_DISPERSION     = true/' Makefile
 	@rm -f Makefile.bak
 	$(MAKE) clean
 	$(MAKE)

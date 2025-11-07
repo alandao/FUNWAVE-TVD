@@ -64,8 +64,14 @@ SUBROUTINE SourceTerms
 # if defined (PRECIPITATION)
      USE PRECIPITATION_MODULE
 # endif
+# if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
+     USE DEBUG_OUTPUT
+# endif
 
      IMPLICIT NONE
+# if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
+     LOGICAL, SAVE :: SOURCES_OUTPUT_DONE = .FALSE.
+# endif
      REAL,DIMENSION(Mloc,Nloc) :: nu_vis
      LOGICAL :: PQ_scheme = .FALSE.
      REAL(SP) :: xmk,ymk,WK_Source
@@ -541,8 +547,43 @@ ENDIF
 # if defined (METEO)
     IF(AirPressure)THEN
       SourceX = SourceX + StormPressureX
-      SourceY = SourceY + StormPressureY   
-    ENDIF  
+      SourceY = SourceY + StormPressureY
+    ENDIF
+# endif
+
+# if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
+    ! Output source terms at TIME ~= 0.5s for validation
+    IF(.NOT. SOURCES_OUTPUT_DONE .AND. TIME >= 0.5_SP .AND. TIME < 1.0_SP) THEN
+#  if defined (PARALLEL)
+        IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
+#  else
+        CALL CREATE_DEBUG_DIRECTORIES()
+#  endif
+
+        ! Output friction sources (separate components for validation)
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsX,'friction_x',50,0,'sources')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsY,'friction_y',50,0,'sources')
+
+        ! Output sponge sources (if enabled)
+        ! Note: CD_4_SPONGE is the friction sponge coefficient
+
+        ! Output breaking sources (if enabled)
+        IF(VISCOSITY_BREAKING .OR. DIFFUSION_SPONGE .OR. WAVEMAKER_VIS) THEN
+            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,BreakSourceX,'breaking_x',50,0,'sources')
+            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,BreakSourceY,'breaking_y',50,0,'sources')
+        ENDIF
+
+        ! Output total source terms
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SourceX,'source_x',50,0,'sources')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SourceY,'source_y',50,0,'sources')
+
+        SOURCES_OUTPUT_DONE = .TRUE.
+#  if defined (PARALLEL)
+        IF(myid==0) WRITE(*,'(A,F8.3)') '  Phase 5: Source terms debug output at TIME=', TIME
+#  else
+        WRITE(*,'(A,F8.3)') '  Phase 5: Source terms debug output at TIME=', TIME
+#  endif
+    ENDIF
 # endif
 
 END SUBROUTINE SourceTerms
