@@ -564,8 +564,10 @@ ENDIF
         CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsX,'friction_x',50,0,'sources')
         CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsY,'friction_y',50,0,'sources')
 
-        ! Output sponge sources (if enabled)
-        ! Note: CD_4_SPONGE is the friction sponge coefficient
+        ! Output sponge coefficient (if friction sponge enabled)
+        IF(FRICTION_SPONGE) THEN
+            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,CD_4_SPONGE,'cd_4_sponge',50,0,'sources')
+        ENDIF
 
         ! Output breaking sources (if enabled)
         IF(VISCOSITY_BREAKING .OR. DIFFUSION_SPONGE .OR. WAVEMAKER_VIS) THEN
