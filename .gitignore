@@ -13,3 +13,4 @@ test_regular_wave_1d
 Makefile.bak
 
 *.mod
+.DS_Store
