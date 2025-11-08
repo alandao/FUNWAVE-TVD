@@ -120,6 +120,21 @@ IF(WAVEMAKER(1:6)=='WK_REG')THEN
                 *SIN(rlamda*(ymk_wk(J)-ZERO)-2.0_SP*PI/Tperiod*TIME)
         ENDDO
     ENDDO
+
+# if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
+    ! Output wavemaker source at TIME ~= 0.5s (timestep 50 with dt=0.01)
+    IF (.NOT. SOURCES_OUTPUT_DONE .AND. TIME >= 0.49_SP .AND. TIME <= 0.51_SP) THEN
+# if defined (PARALLEL)
+        IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
+# else
+        CALL CREATE_DEBUG_DIRECTORIES()
+# endif
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,WaveMaker_Mass,'wavemaker_mass',50,0,'sources')
+        SOURCES_OUTPUT_DONE = .TRUE.
+        IF(myid.eq.0) WRITE(*,*) 'Wavemaker debug output at TIME=', TIME
+    ENDIF
+# endif
+
 ELSEIF(WaveMaker(1:6)=='WK_IRR'.OR.WaveMaker(1:6)=='TMA_1D' &
     .OR.WaveMaker(1:6)=='JON_1D'.OR.WaveMaker(1:6)=='JON_2D' &
     .OR.WaveMaker(1:10)=='WK_NEW_IRR')THEN
