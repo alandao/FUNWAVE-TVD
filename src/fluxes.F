@@ -57,9 +57,11 @@ SUBROUTINE FLUXES
      IMPLICIT NONE
 # if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
      LOGICAL, SAVE :: WAVESPEEDS_OUTPUT_DONE = .FALSE.
+     INTEGER :: TIMESTEP_NUM_WS
 # endif
 # if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
      LOGICAL, SAVE :: FLUXES_OUTPUT_DONE = .FALSE.
+     INTEGER :: TIMESTEP_NUM_FX
 # endif
 
       IF(HIGH_ORDER(1:3)=='FOU') THEN       !ykchoi (08/28/2016)
@@ -116,18 +118,18 @@ SUBROUTINE FLUXES
      ENDIF
 
 # if defined (DEBUG_WAVESPEEDS) || defined (DEBUG_ALL)
-    ! Output wave speeds at TIME ~= 0.5s (timestep 50) when waves exist
-    IF(.NOT. WAVESPEEDS_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+    ! Output wave speeds at specified timesteps
+    TIMESTEP_NUM_WS = NINT(TIME/DT)
+    IF(TIMESTEP_NUM_WS >= DEBUG_START_TIMESTEP .AND. &
+       TIMESTEP_NUM_WS <= DEBUG_END_TIMESTEP .AND. &
+       MOD(TIMESTEP_NUM_WS - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
         ! Output x-interface wave speeds (M1 x N)
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SxL,'sxl',50,0,'wavespeeds')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SxR,'sxr',50,0,'wavespeeds')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SxL,'sxl',TIMESTEP_NUM_WS,0,'wavespeeds')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SxR,'sxr',TIMESTEP_NUM_WS,0,'wavespeeds')
 
         ! Output y-interface wave speeds (M x N1)
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SyL,'syl',50,0,'wavespeeds')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SyR,'syr',50,0,'wavespeeds')
-
-        WAVESPEEDS_OUTPUT_DONE = .TRUE.
-        IF(myid==0) WRITE(*,'(A,F8.3,A)') 'Phase 3: Wave speeds debug output at TIME=', TIME, 's'
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SyL,'syl',TIMESTEP_NUM_WS,0,'wavespeeds')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SyR,'syr',TIMESTEP_NUM_WS,0,'wavespeeds')
     ENDIF
 # endif
 
@@ -138,20 +140,20 @@ SUBROUTINE FLUXES
      ENDIF
 
 # if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
-    ! Output fluxes at TIME ~= 0.5s (timestep 50) when waves exist
-    IF(.NOT. FLUXES_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+    ! Output fluxes at specified timesteps
+    TIMESTEP_NUM_FX = NINT(TIME/DT)
+    IF(TIMESTEP_NUM_FX >= DEBUG_START_TIMESTEP .AND. &
+       TIMESTEP_NUM_FX <= DEBUG_END_TIMESTEP .AND. &
+       MOD(TIMESTEP_NUM_FX - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
         ! Output x-interface fluxes
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,P,'p',50,0,'fluxes')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Fx,'fx',50,0,'fluxes')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Gx,'gx',50,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,P,'p',TIMESTEP_NUM_FX,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Fx,'fx',TIMESTEP_NUM_FX,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Gx,'gx',TIMESTEP_NUM_FX,0,'fluxes')
 
         ! Output y-interface fluxes
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Q,'q',50,0,'fluxes')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Fy,'fy',50,0,'fluxes')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Gy,'gy',50,0,'fluxes')
-
-        FLUXES_OUTPUT_DONE = .TRUE.
-        IF(myid==0) WRITE(*,'(A,F8.3,A)') 'Phase 4: Fluxes debug output at TIME=', TIME, 's'
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Q,'q',TIMESTEP_NUM_FX,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Fy,'fy',TIMESTEP_NUM_FX,0,'fluxes')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Gy,'gy',TIMESTEP_NUM_FX,0,'fluxes')
     ENDIF
 # endif
 
@@ -250,6 +252,7 @@ SUBROUTINE DelxyFun
      USE DEBUG_OUTPUT
      LOGICAL, SAVE :: DERIVATIVES_OUTPUT_DONE = .FALSE.
      LOGICAL, SAVE :: FIRST_CALL = .TRUE.
+     INTEGER :: TIMESTEP_NUM_DV
 # endif
 
 # if defined (DEBUG_DERIVATIVES)
@@ -282,42 +285,39 @@ SUBROUTINE DelxyFun
       CALL DelyFun(DY,Mloc,Nloc,HU,DelyHU)
 
 # if defined (DEBUG_DERIVATIVES)
-! Output derivative arrays for validation when waves are first detected
+! Output derivative arrays for validation at specified timesteps
 ! All processors must participate in the output since OUTPUT_DEBUG_ARRAY_2D
 ! now handles the parallel gathering internally
-      ! Output when TIME reaches approximately 0.5 seconds (when waves have formed)
-      IF(.NOT. DERIVATIVES_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+      TIMESTEP_NUM_DV = NINT(TIME/DT)
+      IF(TIMESTEP_NUM_DV >= DEBUG_START_TIMESTEP .AND. &
+         TIMESTEP_NUM_DV <= DEBUG_END_TIMESTEP .AND. &
+         MOD(TIMESTEP_NUM_DV - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
 #  if defined (PARALLEL)
         IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
 #  else
         CALL CREATE_DEBUG_DIRECTORIES()
 #  endif
-        WRITE(*,*) 'Phase 1 debug output at TIME:', TIME
 
         ! First output the INPUT STATE that produces these slopes
         ! This allows JAX to load the exact same state and compute slopes
-        ! Use 50 to indicate TIME ~= 0.5s (multiplied by 100 for integer timestep)
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_input',50,0,'state')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U,'u_input',50,0,'state')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V,'v_input',50,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_input',TIMESTEP_NUM_DV,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U,'u_input',TIMESTEP_NUM_DV,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V,'v_input',TIMESTEP_NUM_DV,0,'state')
         ! MASK is integer, convert to real for output
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,REAL(MASK,SP),'mask_input',50,0,'state')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Depth,'depth_input',50,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,REAL(MASK,SP),'mask_input',TIMESTEP_NUM_DV,0,'state')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Depth,'depth_input',TIMESTEP_NUM_DV,0,'state')
 
         ! Then output the COMPUTED SLOPES from that state
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxEtar,'delx_etar',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxU,'delx_u',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxV,'delx_v',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHU,'delx_hu',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHV,'delx_hv',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyEtar,'dely_etar',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyU,'dely_u',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyV,'dely_v',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHU,'dely_hu',50,0,'derivatives')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHV,'dely_hv',50,0,'derivatives')
-        DERIVATIVES_OUTPUT_DONE = .TRUE.
-        IF(myid==0) WRITE(*,'(A,F8.3,A,E12.4)') 'Phase 1: Debug output at TIME=', &
-                     TIME, ' with max|eta|=', MAXVAL(ABS(Eta))
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxEtar,'delx_etar',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxU,'delx_u',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxV,'delx_v',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHU,'delx_hu',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelxHV,'delx_hv',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyEtar,'dely_etar',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyU,'dely_u',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyV,'dely_v',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHU,'dely_hu',TIMESTEP_NUM_DV,0,'derivatives')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,DelyHV,'dely_hv',TIMESTEP_NUM_DV,0,'derivatives')
       ENDIF
 # endif
 
@@ -552,6 +552,7 @@ SUBROUTINE CONSTRUCTION
      IMPLICIT NONE
 # if defined (DEBUG_RECONSTRUCTION) || defined (DEBUG_ALL)
      LOGICAL, SAVE :: RECONSTRUCTION_OUTPUT_DONE = .FALSE.
+     INTEGER :: TIMESTEP_NUM_RC
 # endif
 # if defined (CARTESIAN)
 ! ykchoi (15. 08. 06.)
@@ -786,38 +787,38 @@ SUBROUTINE CONSTRUCTION
 # endif
 
 # if defined (DEBUG_RECONSTRUCTION) || defined (DEBUG_ALL)
-    ! Output reconstruction at TIME ~= 0.5s (timestep 50) when waves exist
-    IF(.NOT. RECONSTRUCTION_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+    ! Output reconstruction at specified timesteps
+    TIMESTEP_NUM_RC = NINT(TIME/DT)
+    IF(TIMESTEP_NUM_RC >= DEBUG_START_TIMESTEP .AND. &
+       TIMESTEP_NUM_RC <= DEBUG_END_TIMESTEP .AND. &
+       MOD(TIMESTEP_NUM_RC - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
         ! Output x-interface reconstructions
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UxL,'uxl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UxR,'uxr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VxL,'vxl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VxR,'vxr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRxL,'etarxl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRxR,'etarxr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HxL,'hxl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HxR,'hxr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUxL,'huxl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUxR,'huxr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVxL,'hvxl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVxR,'hvxr',50,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UxL,'uxl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UxR,'uxr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VxL,'vxl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VxR,'vxr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRxL,'etarxl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRxR,'etarxr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HxL,'hxl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HxR,'hxr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUxL,'huxl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUxR,'huxr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVxL,'hvxl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVxR,'hvxr',TIMESTEP_NUM_RC,0,'reconstruction')
 
         ! Output y-interface reconstructions
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UyL,'uyl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UyR,'uyr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VyL,'vyl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VyR,'vyr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRyL,'etaryl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRyR,'etaryr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HyL,'hyl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HyR,'hyr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUyL,'huyl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUyR,'huyr',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVyL,'hvyl',50,0,'reconstruction')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVyR,'hvyr',50,0,'reconstruction')
-
-        RECONSTRUCTION_OUTPUT_DONE = .TRUE.
-        IF(myid==0) WRITE(*,'(A,F8.3,A)') 'Phase 2: Reconstruction debug output at TIME=', TIME, 's'
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UyL,'uyl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,UyR,'uyr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VyL,'vyl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,VyR,'vyr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRyL,'etaryl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,EtaRyR,'etaryr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HyL,'hyl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HyR,'hyr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUyL,'huyl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HUyR,'huyr',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVyL,'hvyl',TIMESTEP_NUM_RC,0,'reconstruction')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,HVyR,'hvyr',TIMESTEP_NUM_RC,0,'reconstruction')
     ENDIF
 # endif
 

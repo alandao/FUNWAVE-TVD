@@ -67,6 +67,7 @@ SUBROUTINE CAL_DISPERSION
      IMPLICIT NONE
 # if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
      LOGICAL, SAVE :: DISPERSION_OUTPUT_DONE = .FALSE.
+     INTEGER :: TIMESTEP_NUM_DISP
 # endif
 
      REAL(SP),Dimension(Mloc,Nloc) :: DU,DV,DUt,DVt
@@ -390,16 +391,18 @@ SUBROUTINE CAL_DISPERSION
      ENDDO
 
 # if defined (DEBUG_FLUXES) || defined (DEBUG_ALL)
-    IF(.NOT. DISPERSION_OUTPUT_DONE .AND. TIME >= 0.5 .AND. TIME < 1.0) THEN
+    ! Output dispersion terms at specified timesteps
+    TIMESTEP_NUM_DISP = NINT(TIME/DT)
+    IF(TIMESTEP_NUM_DISP >= DEBUG_START_TIMESTEP .AND. &
+       TIMESTEP_NUM_DISP <= DEBUG_END_TIMESTEP .AND. &
+       MOD(TIMESTEP_NUM_DISP - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
 #  if defined (PARALLEL)
         IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
 #  else
         CALL CREATE_DEBUG_DIRECTORIES()
 #  endif
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U4,'u4',50,0,'dispersion')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V4,'v4',50,0,'dispersion')
-        DISPERSION_OUTPUT_DONE = .TRUE.
-        IF(myid.eq.0) WRITE(*,*) 'Dispersion debug output at TIME=', TIME
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U4,'u4',TIMESTEP_NUM_DISP,0,'dispersion')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,V4,'v4',TIMESTEP_NUM_DISP,0,'dispersion')
     ENDIF
 # endif
 

@@ -80,12 +80,11 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
 
      INTEGER::kf,kd
 
-! Debug output for initial state at specific timesteps
+! Debug output for initial state at specified timesteps
      TIMESTEP_NUM = NINT(TIME/DT)
-     ! Original validation: timesteps 5-7
-     ! Phase 7c debugging: timesteps 13-14
-     IF((TIMESTEP_NUM >= 5 .AND. TIMESTEP_NUM <= 7) .OR. &
-        (TIMESTEP_NUM >= 13 .AND. TIMESTEP_NUM <= 14)) THEN
+     IF(TIMESTEP_NUM >= DEBUG_START_TIMESTEP .AND. &
+        TIMESTEP_NUM <= DEBUG_END_TIMESTEP .AND. &
+        MOD(TIMESTEP_NUM - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
        IF(ISTEP == 1) THEN
          CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_input',TIMESTEP_NUM,0,'state')
          CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,U,'u_input',TIMESTEP_NUM,0,'state')
@@ -283,10 +282,11 @@ SUBROUTINE ESTIMATE_HUV(ISTEP)
      ENDDO
      ENDDO
 
-! Debug output for RK stages at steps 5-7 and 13-14
+! Debug output for RK stages at specified timesteps
      TIMESTEP_NUM = NINT(TIME/DT)
-     DEBUG_RK_STAGES = ((TIMESTEP_NUM >= 5 .AND. TIMESTEP_NUM <= 7) .OR. &
-                        (TIMESTEP_NUM >= 13 .AND. TIMESTEP_NUM <= 14))
+     DEBUG_RK_STAGES = (TIMESTEP_NUM >= DEBUG_START_TIMESTEP .AND. &
+                        TIMESTEP_NUM <= DEBUG_END_TIMESTEP .AND. &
+                        MOD(TIMESTEP_NUM - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0)
      IF(DEBUG_RK_STAGES) THEN
        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,R1,'R1',TIMESTEP_NUM,ISTEP,'rk_tendencies')
        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,Eta,'eta_before_update',TIMESTEP_NUM,ISTEP,'rk_tendencies')

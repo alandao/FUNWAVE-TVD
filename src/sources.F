@@ -71,6 +71,7 @@ SUBROUTINE SourceTerms
      IMPLICIT NONE
 # if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
      LOGICAL, SAVE :: SOURCES_OUTPUT_DONE = .FALSE.
+     INTEGER :: TIMESTEP_NUM_WM, TIMESTEP_NUM_SRC
 # endif
      REAL,DIMENSION(Mloc,Nloc) :: nu_vis
      LOGICAL :: PQ_scheme = .FALSE.
@@ -122,16 +123,17 @@ IF(WAVEMAKER(1:6)=='WK_REG')THEN
     ENDDO
 
 # if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
-    ! Output wavemaker source at TIME ~= 0.5s (timestep 50 with dt=0.01)
-    IF (.NOT. SOURCES_OUTPUT_DONE .AND. TIME >= 0.49_SP .AND. TIME <= 0.51_SP) THEN
+    ! Output wavemaker source at specified timesteps
+    TIMESTEP_NUM_WM = NINT(TIME/DT)
+    IF(TIMESTEP_NUM_WM >= DEBUG_START_TIMESTEP .AND. &
+       TIMESTEP_NUM_WM <= DEBUG_END_TIMESTEP .AND. &
+       MOD(TIMESTEP_NUM_WM - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
 # if defined (PARALLEL)
         IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
 # else
         CALL CREATE_DEBUG_DIRECTORIES()
 # endif
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,WaveMaker_Mass,'wavemaker_mass',50,0,'sources')
-        SOURCES_OUTPUT_DONE = .TRUE.
-        IF(myid.eq.0) WRITE(*,*) 'Wavemaker debug output at TIME=', TIME
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,WaveMaker_Mass,'wavemaker_mass',TIMESTEP_NUM_WM,0,'sources')
     ENDIF
 # endif
 
@@ -567,8 +569,11 @@ ENDIF
 # endif
 
 # if defined (DEBUG_SOURCES) || defined (DEBUG_ALL)
-    ! Output source terms at TIME ~= 0.5s for validation
-    IF(.NOT. SOURCES_OUTPUT_DONE .AND. TIME >= 0.5_SP .AND. TIME < 1.0_SP) THEN
+    ! Output source terms at specified timesteps
+    TIMESTEP_NUM_SRC = NINT(TIME/DT)
+    IF(TIMESTEP_NUM_SRC >= DEBUG_START_TIMESTEP .AND. &
+       TIMESTEP_NUM_SRC <= DEBUG_END_TIMESTEP .AND. &
+       MOD(TIMESTEP_NUM_SRC - DEBUG_START_TIMESTEP, DEBUG_INTERVAL) == 0) THEN
 #  if defined (PARALLEL)
         IF(myid==0) CALL CREATE_DEBUG_DIRECTORIES()
 #  else
@@ -576,30 +581,23 @@ ENDIF
 #  endif
 
         ! Output friction sources (separate components for validation)
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsX,'friction_x',50,0,'sources')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsY,'friction_y',50,0,'sources')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsX,'friction_x',TIMESTEP_NUM_SRC,0,'sources')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,FrcInsY,'friction_y',TIMESTEP_NUM_SRC,0,'sources')
 
         ! Output sponge coefficient (if friction sponge enabled)
         IF(FRICTION_SPONGE) THEN
-            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,CD_4_SPONGE,'cd_4_sponge',50,0,'sources')
+            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,CD_4_SPONGE,'cd_4_sponge',TIMESTEP_NUM_SRC,0,'sources')
         ENDIF
 
         ! Output breaking sources (if enabled)
         IF(VISCOSITY_BREAKING .OR. DIFFUSION_SPONGE .OR. WAVEMAKER_VIS) THEN
-            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,BreakSourceX,'breaking_x',50,0,'sources')
-            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,BreakSourceY,'breaking_y',50,0,'sources')
+            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,BreakSourceX,'breaking_x',TIMESTEP_NUM_SRC,0,'sources')
+            CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,BreakSourceY,'breaking_y',TIMESTEP_NUM_SRC,0,'sources')
         ENDIF
 
         ! Output total source terms
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SourceX,'source_x',50,0,'sources')
-        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SourceY,'source_y',50,0,'sources')
-
-        SOURCES_OUTPUT_DONE = .TRUE.
-#  if defined (PARALLEL)
-        IF(myid==0) WRITE(*,'(A,F8.3)') '  Phase 5: Source terms debug output at TIME=', TIME
-#  else
-        WRITE(*,'(A,F8.3)') '  Phase 5: Source terms debug output at TIME=', TIME
-#  endif
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SourceX,'source_x',TIMESTEP_NUM_SRC,0,'sources')
+        CALL OUTPUT_DEBUG_ARRAY_2D(Ibeg,Iend,Jbeg,Jend,SourceY,'source_y',TIMESTEP_NUM_SRC,0,'sources')
     ENDIF
 # endif
 

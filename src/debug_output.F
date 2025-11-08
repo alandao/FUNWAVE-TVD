@@ -34,7 +34,7 @@ SUBROUTINE CREATE_DEBUG_DIRECTORIES()
         CALL SYSTEM(TRIM(cmd))
         WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/sources'
         CALL SYSTEM(TRIM(cmd))
-        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/rk3'
+        WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/rk_tendencies'
         CALL SYSTEM(TRIM(cmd))
         WRITE(cmd,'(A,A,A)') 'mkdir -p ',TRIM(RESULT_FOLDER),'/debug/dispersion'
         CALL SYSTEM(TRIM(cmd))

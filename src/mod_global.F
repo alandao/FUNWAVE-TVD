@@ -378,6 +378,10 @@ MODULE GLOBAL
                   OUT_BrkdisX = .FALSE., &
                   OUT_BrkdisY = .FALSE.
 
+! debug output control for step-by-step validation
+       INTEGER :: DEBUG_START_TIMESTEP = 1
+       INTEGER :: DEBUG_END_TIMESTEP = 999999
+       INTEGER :: DEBUG_INTERVAL = 1
 
 !# if defined (CARTESIAN)
 ! periodic boundary conditions
